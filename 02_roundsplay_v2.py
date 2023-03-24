@@ -8,7 +8,49 @@ import random
 class Menu:
 
     def __init__(self):
-        self.to_play(3)
+        # common format for all buttons
+        # Arial size 14 bold with white text
+        button_font = ("Arial", "14")
+        button_fg = "#FFFFFF"
+
+        # Set up GUI Frame
+        self.menu_frame = Frame(padx=10, pady=10)
+        self.menu_frame.grid()
+
+        self.menu_heading = Label(self.menu_frame,
+                                  text="Colour Quest",
+                                  font=("Arial", "18", "bold"))
+        self.menu_heading.grid(row=0)
+
+        instructions = "In each round you will be given six different " \
+                       "colours to choose from. pick a colour and see if " \
+                       "you can beat the computer's score! \n\n" \
+                       "To begin, chose how many rounds you d like to play..."
+        self.menu_instructions = Label(self.menu_frame,
+                                       text=instructions,
+                                       wraplength=430, width=60,
+                                       justify="left",
+                                       pady=10)
+        self.menu_instructions.grid(row=1)
+
+        self.button_frame = Frame(self.menu_frame)
+        self.button_frame.grid(row=4)
+
+        btn_colour_value = [
+            ["#CC0000", 3], ["#009900", 5], ["#000099", 10]
+        ]
+
+        column_var = 0
+        for item in btn_colour_value:
+            self.button = Button(self.button_frame,
+                                 text="{} Rounds".format(item[1]),
+                                 font=button_font, width=12,
+                                 bg=item[0],
+                                 fg=button_fg,
+                                 command=lambda: self.to_play(item[1]))
+            self.button.grid(row=0, column=column_var,
+                             pady=5, padx=5)
+            column_var += 1
 
     def to_play(self, num_rounds):
         Play(num_rounds)
@@ -17,14 +59,9 @@ class Menu:
         root.withdraw()
 
 
-def get_stats():
-    print("you chose to get the statistics")
- 
-
 class Play:
 
     def __init__(self, how_many):
-        self.round_results_bg = None
         self.play_box = Toplevel()
 
         # if users press cross at tip, closes help and
@@ -61,7 +98,7 @@ class Play:
                                     font=("Arial", "16", "bold"))
         self.choose_heading.grid(row=0)
 
-        instructions = "choose on of the colours below. When you choose" \
+        instructions = "Choose on of the colours below. When you choose" \
                        "a colour, the computer's choice and the results of" \
                        "the round will be revealed."
         self.instructions_label = Label(self.quest_frame, text=instructions,
@@ -70,7 +107,7 @@ class Play:
 
         # get colours for buttons for first round ...
         self.button_colours_list = self.get_round_colours()
-        print(self.button_colours_list)  # for testing purposes
+        # print(self.button_colours_list)  # for testing purposes
 
         self.choice_frame = Frame(self.quest_frame)
         self.choice_frame.grid(row=2)
@@ -112,10 +149,9 @@ class Play:
         self.next_button = Button(self.rounds_frame, text="Next Round",
                                   fg="#FFFFFF", bg="#008BFC",
                                   font=("Arial", 11, "bold"),
-                                  width=10, state=DISABLED)
+                                  width=10, state=DISABLED,
+                                  command=self.new_round)
         self.next_button.grid(row=0, column=1)
-
-        self.new_round()
 
         # large label to show overall gae results
         self.game_results_label = Label(self.quest_frame,
@@ -150,10 +186,11 @@ class Play:
             # add buttons to control list
             self.control_button_ref.append(self.make_control_button)
 
-        # self.start_over_button = Button(self.control_frame,
-        #                                 text="Start Over",
-        #                                 command=self.close_play)
-        # self.start_over_button.grid(row=3, column=1)
+        # disable help button
+        self.to_help_btn = self.control_button_ref[0]
+
+        # start game
+        self.new_round()
 
     def close_play(self):
         # reshow menu
@@ -211,7 +248,7 @@ class Play:
             item['state'] = NORMAL
             count += 1
 
-        # retrieve nuber of rounds wanted / played
+        # retrieve number of rounds wanted / played
         # and update heading.
         how_many = self.rounds_wanted.get()
         current_round = self.rounds_played.get()
@@ -309,16 +346,80 @@ class Play:
             # enable next round button and update heading
             self.next_button.config(state=NORMAL)
 
-    def get_help(self):
-        print("you chose to get help")
+    def get_stats(self):
+        print("you chose to get the statistics")
 
     def to_do(self, action):
         if action == "get help":
-            self.get_help()
+            DisplayHelp(self)
         elif action == "get stats":
-            get_stats()
+            self.get_stats()
         else:
             self.close_play()
+
+
+class DisplayHelp:
+
+    def __init__(self, partner):
+        # set up dialogue box and background colour
+        background = "#ffe6cc"
+        self.help_box = Toplevel()
+
+        # disable help button
+        partner.to_help_btn.config(state=DISABLED)
+
+        # if users press cross at top, closes help and
+        # 'releases' help button
+        self.help_box.protocol('WM_DELETE_WINDOW',
+                               partial(self.close_help, partner))
+
+        self.help_frame = Frame(self.help_box, width=300, height=200,
+                                bg=background)
+        self.help_frame.grid()
+
+        self.help_heading = Label(self.help_frame,
+                                  text="Help / Info", bg=background,
+                                  font=("Arial", "23", "bold"))
+        self.help_heading.grid(row=0)
+
+        help_text = "Your goal in this game is to beat the computer and you " \
+                    "have an advantage - you get to choose your colour first. " \
+                    "The points associated with the colour are based on the colours " \
+                    "hex code." \
+                    "\n\n" \
+                    "THe higher the value of the colour, the greater your score. To " \
+                    "see you statistics press the 'Statistics' button. \n\n" \
+                    "Win the game by scoring more than the computer overall. " \
+                    "Don't be discouraged if you dont win every round, it's " \
+                    "your overall score that counts.\n\n" \
+                    "Good luck! Choose carefully."
+
+        self.help_text_label = Label(self.help_frame, bg=background,
+                                     text=help_text, wraplength=350,
+                                     justify="left")
+        self.help_text_label.grid(row=1, padx=10)
+
+        self.dismiss_button = Button(self.help_frame,
+                                     font=("Arial", "12", "bold"),
+                                     text="Dismiss", bg="#CC6600",
+                                     fg="#FFFFFF",
+                                     command=partial(self.close_help,
+                                                     partner))
+        self.dismiss_button.grid(row=2, padx=10, pady=10)
+
+    # closes help dialogue (used by button and x at top of dialogue)
+    def close_help(self, partner):
+        # Put help button back tp normal...
+        partner.to_help_btn.config(state=NORMAL)
+        self.help_box.destroy()
+
+
+# main routine
+if __name__ == "__main__":
+    root = Tk()
+    root.title("Colour Quest")
+    Menu()
+    root.mainloop()
 
 
 # main routine
