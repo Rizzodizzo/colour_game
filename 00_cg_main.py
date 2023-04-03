@@ -190,15 +190,11 @@ class Play:
 
         # disable help button
         self.to_help_btn = self.control_button_ref[0]
+        self.to_stats_btn = self.control_button_ref[1]
 
         # start game
         self.new_round()
-
-    def close_play(self):
-        # reshow menu
-        # game / allow new game to start
-        root.deiconify()
-        self.play_box.destroy()
+        self.to_stats_btn.config(state=DISABLED)
 
     @staticmethod
     def get_all_colours():
@@ -336,7 +332,7 @@ class Play:
                                     text=status)
 
             # update 'start over button'
-            start_over_button = self.choice_button_ref[2]
+            start_over_button = self.control_button_ref[2]
             start_over_button['text'] = "Play Again"
             start_over_button['bg'] = "#009900"
 
@@ -347,17 +343,21 @@ class Play:
         else:
             # enable next round button and update heading
             self.next_button.config(state=NORMAL)
-
-    def get_stats(self):
-        print("you chose to get the statistics")
+            self.to_stats_btn.config(state=NORMAL)
 
     def to_do(self, action):
         if action == "get help":
             DisplayHelp(self)
         elif action == "get stats":
-            self.get_stats()
+            DisplayStats(self, self.user_scores, self.computer_scores)
         else:
             self.close_play()
+
+    def close_play(self):
+        # reshow menu
+        # game / allow new game to start
+        root.deiconify()
+        self.play_box.destroy()
 
 
 class DisplayHelp:
@@ -416,12 +416,101 @@ class DisplayHelp:
         self.help_box.destroy()
 
 
-# main routine
-if __name__ == "__main__":
-    root = Tk()
-    root.title("Colour Quest")
-    Menu()
-    root.mainloop()
+class DisplayStats:
+
+    def __init__(self, partner, user_scores, computer_scores):
+        # set up dialogue box and background colour
+        background = "#DAE8FC"
+        self.stats_box = Toplevel()
+
+        # disable stats button
+        partner.to_stats_btn.config(state=DISABLED)
+
+        # if users press cross at top, closes stats and
+        # 'releases' stats button
+        self.stats_box.protocol('WM_DELETE_WINDOW',
+                                partial(self.close_stats, partner))
+
+        self.stats_frame = Frame(self.stats_box, width=300, height=200,
+                                 bg=background)
+        self.stats_frame.grid()
+
+        self.stats_heading = Label(self.stats_frame,
+                                   text="Statistics", bg=background,
+                                   font=("Arial", "14", "bold"))
+        self.stats_heading.grid(row=0)
+
+        stats_text = "Here are your game statistics"
+
+        self.stats_text_label = Label(self.stats_frame, bg=background,
+                                      text=stats_text, justify="left")
+        self.stats_text_label.grid(row=1, padx=10)
+
+        # frame to hold statistics 'table'
+        self.data_frame = Frame(self.stats_frame, bg=background,
+                                borderwidth=1, relief="solid")
+        self.data_frame.grid(row=2, padx=10, pady=10)
+
+        self.user_stats = self.get_stats(user_scores, "User")
+        self.comp_stats = self.get_stats(computer_scores, "Computer")
+
+        # background formatting for heading, odd and even rows
+        head_back = "#FFFFFF"
+        odd_rows = "#C9D6E8"
+        even_rows = background
+
+        row_names = ["", "Total", "Best Score", "Worst Score", "Average Score"]
+        row_formats = [head_back, odd_rows, even_rows, odd_rows, even_rows]
+
+        # data for labels (one label / sublist)
+        all_labels = []
+
+        count = 0
+        for item in range(0, len(self.user_stats)):
+            all_labels.append([row_names[item], row_formats[count]])
+            all_labels.append([self.user_stats[item], row_formats[count]])
+            all_labels.append([self.comp_stats[item], row_formats[count]])
+            count += 1
+
+        # create labels based on list above
+        for item in range(0, len(all_labels)):
+            self.data_label = Label(self.data_frame, text=all_labels[item][0],
+                                    bg=all_labels[item][1],
+                                    width="10", height="2", padx=5)
+
+            self.data_label.grid(row=item // 3,
+                                 column=item % 3,
+                                 padx=0, pady=0)
+
+        # dismiss button
+        self.dismiss_button = Button(self.stats_frame,
+                                     font=("Arial", "12", "bold"),
+                                     text="Dismiss", bg="#CC6600",
+                                     fg="#FFFFFF",
+                                     command=partial(self.close_stats,
+                                                     partner))
+        self.dismiss_button.grid(row=3, padx=10, pady=10)
+
+    # closes stats dialogue (used by button and x at top of dialogue)
+    def close_stats(self, partner):
+        # Put stats button back tp normal...
+        partner.to_stats_btn.config(state=NORMAL)
+        self.stats_box.destroy()
+
+    # calculate stats and column
+    # heading at first item
+    @staticmethod
+    def get_stats(score_list, entity):
+        total_score = sum(score_list)
+        best_score = max(score_list)
+        worst_score = min(score_list)
+        average = total_score / len(score_list)
+
+        # set average to 1 DP
+        average = "{:.1f}".format(average)
+
+        return [entity, total_score, best_score, worst_score, average]
+
 
 # main routine
 if __name__ == "__main__":
